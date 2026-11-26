@@ -45,7 +45,29 @@ export const envSchema = z.object({
         }, 'Invalid application database connection')
         .optional(),
 
+    ORDER_API_BASE_URL: z
+        .string()
+        .refine((value) => {
+            try {
+                const url = new URL(value);
 
+                return (
+                    url.protocol === 'http:' &&
+                    url.hostname === '127.0.0.1' &&
+                    url.port !== '' &&
+                    url.origin === value
+                );
+            } catch {
+                return false;
+            }
+        }, 'Invalid Order API URL')
+        .optional(),
+
+    ORDER_API_TOKEN: z
+        .string()
+        .length(64)
+        .regex(/^[a-f0-9]{64}$/)
+        .optional(),
     PORT: z
         .string()
         .regex(/^\d+$/)

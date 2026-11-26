@@ -7,6 +7,7 @@ import {
     NotFoundException,
     Param,
     Query,
+    ServiceUnavailableException,
 } from '@nestjs/common';
 
 import { CurrentUser } from '../../auth';
@@ -23,14 +24,14 @@ import type {
 
 import { InvalidOrderIdError } from '../application/errors/invalid-order-id.error';
 
+import { OrderProviderUnavailableError } from '../application/errors/order-provider-unavailable.error';
+
 import {
     orderParamsSchema,
     orderQueryParamsSchema,
 } from './schemas/order-request.schema';
 
-import type {
-    OrderParams,
-} from './schemas/order-request.schema';
+import type { OrderParams } from './schemas/order-request.schema';
 
 @Controller('orders')
 export class OrdersController {
@@ -49,8 +50,6 @@ export class OrdersController {
         @Query(new ZodValidationPipe(orderQueryParamsSchema))
         query: unknown,
     ): Promise<OrderView> {
-        // This endpoint does not accept query parameters.
-        //verificar esse void aq
         void query;
 
         try {
@@ -67,6 +66,12 @@ export class OrdersController {
         } catch (error: unknown) {
             if (error instanceof InvalidOrderIdError) {
                 throw new BadRequestException();
+            }
+
+            if (
+                error instanceof OrderProviderUnavailableError
+            ) {
+                throw new ServiceUnavailableException();
             }
 
             throw error;

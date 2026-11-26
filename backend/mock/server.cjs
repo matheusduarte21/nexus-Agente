@@ -1,0 +1,93 @@
+const { createServer } = require('node:http');
+const { timingSafeEqual } = require('node:crypto');
+const orders = require('./fixtures/orders.json');
+
+function sendJson(response, statusCode, data) {
+  response.writeHead(statusCode, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+  });
+
+  response.end(JSON.stringify(data));
+}
+
+function createOrderServer(serviceToken) {
+  if (
+    typeof serviceToken !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(serviceToken)
+  ) {
+    throw new Error('Invalid Order API configuration');
+  }
+
+  const expectedAuthorization = Buffer.from(`Bearer ${serviceToken}`);
+
+  return createServer(
+    {
+      requestTimeout: 5000,
+      headersTimeout: 5000,
+      maxHeaderSize: 8192,
+    },
+    (request, response) => {
+      const authorization = Buffer.from(request.headers.authorization ?? '');
+
+      const authorized =
+        authorization.length === expectedAuthorization.length &&
+        timingSafeEqual(authorization, expectedAuthorization);
+
+      if (!authorized) {
+        response.setHeader('WWW-Authenticate', 'Bearer realm="order-api"');
+
+        return sendJson(response, 401, {
+          message: 'Unauthorized',
+        });
+      }
+
+      const customerId = request.headers['x-customer-id'];
+
+      if (
+        typeof customerId !== 'string' ||
+        !/^[A-Za-z0-9_-]{1,128}$/.test(customerId)
+      ) {
+        return sendJson(response, 400, {
+          message: 'Bad Request',
+        });
+      }
+
+      const match = /^\/orders\/([A-Za-z0-9_-]{1,64})$/.exec(request.url ?? '');
+
+      if (request.method !== 'GET' || !match) {
+        return sendJson(response, 404, {
+          message: 'Not Found',
+        });
+      }
+
+      const orderId = match[1];
+
+      const order = orders.find(
+        (item) => item.id === orderId && item.customerId === customerId,
+      );
+
+      if (!order) {
+        return sendJson(response, 404, {
+          message: 'Not Found',
+        });
+      }
+
+      return sendJson(response, 200, order);
+    },
+  );
+}
+
+if (require.main === module) {
+  const server = createOrderServer(process.env.ORDER_API_TOKEN);
+
+  server.listen(3002, '127.0.0.1', () => {
+    console.log('Mock Order API listening on port 3002');
+  });
+
+  process.once('SIGTERM', () => server.close());
+  process.once('SIGINT', () => server.close());
+}
+
+module.exports = { createOrderServer };
