@@ -78,6 +78,8 @@ export const envSchema = z.object({
         .trim()
         .min(1)
         .optional(),
+
+        
         
     PORT: z
         .string()

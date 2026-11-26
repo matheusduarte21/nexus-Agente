@@ -11,6 +11,14 @@ import type {
 } from '../../config/env.schema';
 
 import {
+    DatabaseModule,
+} from '../../platform/database/database.module';
+
+import {
+    DatabaseService,
+} from '../../platform/database/database.service';
+
+import {
     EMBEDDING_PROVIDER,
 } from './application/ports/embedding-provider.port';
 
@@ -33,9 +41,23 @@ import {
 import {
     MockEmbeddingProvider,
 } from './infrastructure/embeddings/mock-embedding.provider';
+import { SEARCH_KNOWLEDGE } from './application/knowledge-query';
+
+
+
+import {
+    SearchKnowledgeUseCase,
+} from './application/use-cases/search-knowledge.use-case';
+import {
+    PostgresKnowledgeRepository,
+} from './infrastructure/persistence/postgres-knowledge.repository';
+import { KNOWLEDGE_SEARCH_REPOSITORY, KnowledgeSearchRepository } from './application/ports/nowledge-search.port';
 
 @Module({
-    imports: [ConfigModule],
+    imports: [
+        ConfigModule,
+        DatabaseModule,
+    ],
 
     providers: [
         DocumentLoader,
@@ -55,15 +77,16 @@ import {
                     { infer: true },
                 );
 
+                if (environment === 'test') {
+                    return new MockEmbeddingProvider();
+                }
+
                 const provider = config.getOrThrow(
                     'EMBEDDING_PROVIDER',
                     { infer: true },
                 );
 
-                if (
-                    environment === 'test' ||
-                    provider === 'mock'
-                ) {
+                if (provider === 'mock') {
                     return new MockEmbeddingProvider();
                 }
 
@@ -81,8 +104,38 @@ import {
                 return new OpenAIEmbeddingProvider(apiKey);
             },
         },
+
+        {
+            provide: KNOWLEDGE_SEARCH_REPOSITORY,
+
+            inject: [DatabaseService],
+
+            useFactory: (
+                database: DatabaseService,
+            ): PostgresKnowledgeRepository =>
+                new PostgresKnowledgeRepository(database),
+        },
+        {
+            provide: SEARCH_KNOWLEDGE,
+
+            inject: [
+                KNOWLEDGE_SEARCH_REPOSITORY,
+                EMBEDDING_PROVIDER,
+            ],
+
+            useFactory: (
+                repository: KnowledgeSearchRepository,
+                embeddingProvider: EmbeddingProvider,
+            ): SearchKnowledgeUseCase =>
+                new SearchKnowledgeUseCase(
+                    repository,
+                    embeddingProvider,
+                ),
+        },
     ],
 
-    exports: [EMBEDDING_PROVIDER],
+    exports: [
+        EMBEDDING_PROVIDER,
+    ],
 })
 export class KnowledgeModule { }
