@@ -15,6 +15,9 @@ import {
     ThrottlerGuard,
     ThrottlerModule,
 } from '@nestjs/throttler';
+export {
+  ChatRateLimited,
+} from './presentation/security/user-rate-limit.config';
 
 import {
     createUserRateLimitOptions,

@@ -16,7 +16,7 @@ import { HealthController } from './platform/http/health.controller';
 import { createLoggerOptions } from './platform/logging/logger.config';
 import { OrdersModule } from './modules/orders';
 import { DatabaseModule } from './platform/database/schema/database.module';
-
+import { ChatModule } from './modules/chat';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -55,6 +55,7 @@ import { DatabaseModule } from './platform/database/schema/database.module';
     OrdersModule,
     KnowledgeModule,
     AgentModule,
+    ChatModule,
   ],
 
   controllers: [
