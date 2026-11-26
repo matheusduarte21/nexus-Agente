@@ -1,5 +1,5 @@
+import { KnowledgeEvidence } from "src/modules/knowledge/application/knowledge-query";
 import { AgentModel, ToolSelection } from "../../ports/agent-model.port";
-
 
 export class MockAgentModel implements AgentModel {
     public selectTool(
@@ -17,7 +17,10 @@ export class MockAgentModel implements AgentModel {
 
         const orderId = orderMatch?.[1];
 
-        if (orderId && /cancelar|cancel\b/.test(normalized)) {
+        if (
+            orderId &&
+            /cancelar|cancel\b/.test(normalized)
+        ) {
             return Promise.resolve({
                 kind: 'none',
             });
@@ -26,12 +29,8 @@ export class MockAgentModel implements AgentModel {
         if (orderId) {
             return Promise.resolve({
                 kind: 'call',
-
                 name: 'get_order',
-
-                args: {
-                    orderId,
-                },
+                args: { orderId },
             });
         }
 
@@ -46,12 +45,34 @@ export class MockAgentModel implements AgentModel {
 
         return Promise.resolve({
             kind: 'call',
-
             name: 'search_knowledge',
+            args: { query: message },
+        });
+    }
 
-            args: {
-                query: message,
-            },
+    public generateKnowledgeAnswer(
+        _message: string,
+        evidence: readonly KnowledgeEvidence[],
+    ): Promise<unknown> {
+        const first = evidence[0];
+
+        if (!first) {
+            return Promise.resolve({
+                status: 'insufficient_evidence',
+                answer: '',
+                citationIds: [],
+            });
+        }
+
+        return Promise.resolve({
+            status: 'answered',
+
+            answer:
+                `Trecho recuperado da base de conhecimento:\n\n${first.content}`,
+
+            citationIds: [
+                first.citation.chunkId,
+            ],
         });
     }
 }

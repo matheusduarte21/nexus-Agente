@@ -1,7 +1,7 @@
-
 import { Annotation } from '@langchain/langgraph';
-import { AgentResult } from 'src/modules/agent/application/agent-query';
 import { ToolSelection } from '../../ports/agent-model.port';
+import { AgentResult, AgentReply } from '../../agent-query';
+
 
 
 export const AgentState = Annotation.Root({
@@ -10,6 +10,8 @@ export const AgentState = Annotation.Root({
     selection: Annotation<ToolSelection>(),
 
     result: Annotation<AgentResult>(),
+
+    reply: Annotation<AgentReply>(),
 });
 
 export type AgentGraphState =

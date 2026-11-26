@@ -1,3 +1,4 @@
+import type { KnowledgeEvidence } from '../../../knowledge';
 
 export const AGENT_MODEL = Symbol('AGENT_MODEL');
 
@@ -14,5 +15,12 @@ export type ToolSelection =
 export interface AgentModel {
     selectTool(
         message: string,
+        signal?: AbortSignal,
     ): Promise<ToolSelection>;
+
+    generateKnowledgeAnswer(
+        message: string,
+        evidence: readonly KnowledgeEvidence[],
+        signal?: AbortSignal,
+    ): Promise<unknown>;
 }

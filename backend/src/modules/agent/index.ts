@@ -7,4 +7,6 @@ export {
 export type {
   AgentQuery,
   AgentResult,
+  AgentReply,
+  AgentRun,
 } from './application/agent-query';

@@ -1,6 +1,10 @@
-import { CustomerIdentity } from "../../auth/domain/customer-identity";
-import { KnowledgeSearchResponse } from "../../knowledge";
-import { OrderView } from "../../orders";
+import type { CustomerIdentity } from '../../auth';
+import type { OrderView } from '../../orders';
+
+import type {
+    KnowledgeCitation,
+    KnowledgeSearchResponse,
+} from '../../knowledge';
 
 export const AGENT_QUERY = Symbol('AGENT_QUERY');
 
@@ -21,9 +25,28 @@ export type AgentResult =
         | 'unavailable';
     };
 
+export interface AgentReply {
+    readonly status:
+    | 'answered'
+    | 'no_evidence'
+    | 'not_found'
+    | 'needs_input'
+    | 'invalid_tool'
+    | 'unavailable';
+
+    readonly answer: string;
+
+    readonly sources: readonly KnowledgeCitation[];
+}
+
+export interface AgentRun {
+    readonly result: AgentResult;
+    readonly reply: AgentReply;
+}
+
 export interface AgentQuery {
     execute(
         customer: CustomerIdentity,
         message: string,
-    ): Promise<AgentResult>;
+    ): Promise<AgentRun>;
 }
