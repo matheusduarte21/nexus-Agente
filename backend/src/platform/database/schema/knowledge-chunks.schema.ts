@@ -15,8 +15,12 @@ import {
 import {
     knowledgeDocuments,
 } from './knowledge-documents.schema';
-
-export const EMBEDDING_DIMENSIONS = 1536;
+import {
+    EMBEDDING_DIMENSIONS,
+} from '../../../shared/embedding.constants';
+export {
+    EMBEDDING_DIMENSIONS,
+} from '../../../shared/embedding.constants';
 
 export const knowledgeChunks = pgTable(
     'knowledge_chunks',

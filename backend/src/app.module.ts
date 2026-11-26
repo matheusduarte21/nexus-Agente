@@ -5,6 +5,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './modules/auth';
 import { AppService } from './app.service';
+import { KnowledgeModule } from './modules/knowledge';
 import {
   Environment,
   validateEnvironment,
@@ -51,6 +52,7 @@ import { DatabaseModule } from './platform/database/schema/database.module';
     AuthModule,
     DatabaseModule,
     OrdersModule,
+    KnowledgeModule,
   ],
 
   controllers: [

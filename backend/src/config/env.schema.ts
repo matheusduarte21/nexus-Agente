@@ -68,6 +68,17 @@ export const envSchema = z.object({
         .length(64)
         .regex(/^[a-f0-9]{64}$/)
         .optional(),
+
+    EMBEDDING_PROVIDER: z
+        .enum(['mock', 'openai'])
+        .default('mock'),
+
+    OPENAI_API_KEY: z
+        .string()
+        .trim()
+        .min(1)
+        .optional(),
+        
     PORT: z
         .string()
         .regex(/^\d+$/)
