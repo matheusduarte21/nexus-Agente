@@ -4,6 +4,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.ingestion.example
 coverage/
 *.log
 "@ | Set-Content .gitignore

@@ -68,6 +68,16 @@ export const envSchema = z.object({
         .length(64)
         .regex(/^[a-f0-9]{64}$/)
         .optional(),
+    LLM_PROVIDER: z
+        .enum(['mock', 'openai'])
+        .default('mock'),
+
+    LLM_MODEL: z
+        .string()
+        .trim()
+        .min(1)
+        .max(100)
+        .default('gpt-5.4-mini'),
 
     EMBEDDING_PROVIDER: z
         .enum(['mock', 'openai'])
@@ -79,8 +89,8 @@ export const envSchema = z.object({
         .min(1)
         .optional(),
 
-        
-        
+
+
     PORT: z
         .string()
         .regex(/^\d+$/)

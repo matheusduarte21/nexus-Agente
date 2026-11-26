@@ -6,6 +6,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './modules/auth';
 import { AppService } from './app.service';
 import { KnowledgeModule } from './modules/knowledge';
+import { AgentModule } from './modules/agent';
 import {
   Environment,
   validateEnvironment,
@@ -53,6 +54,7 @@ import { DatabaseModule } from './platform/database/schema/database.module';
     DatabaseModule,
     OrdersModule,
     KnowledgeModule,
+    AgentModule,
   ],
 
   controllers: [
