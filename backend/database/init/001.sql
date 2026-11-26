@@ -1,0 +1,49 @@
+
+\set ON_ERROR_STOP on
+
+\getenv migrator_password DB_MIGRATOR_PASSWORD
+\getenv app_password DB_APP_PASSWORD
+
+BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE ROLE nexus_migrator
+  WITH LOGIN
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION
+  NOBYPASSRLS
+  PASSWORD :'migrator_password';
+
+CREATE ROLE nexus_app
+  WITH LOGIN
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION
+  NOBYPASSRLS
+  PASSWORD :'app_password';
+
+REVOKE ALL ON DATABASE nexus FROM PUBLIC;
+
+GRANT CONNECT, CREATE
+  ON DATABASE nexus
+  TO nexus_migrator;
+
+GRANT CONNECT
+  ON DATABASE nexus
+  TO nexus_app;
+
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+
+GRANT USAGE, CREATE
+  ON SCHEMA public
+  TO nexus_migrator;
+
+GRANT USAGE
+  ON SCHEMA public
+  TO nexus_app;
+
+COMMIT;

@@ -1,0 +1,105 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HUSKY: "0"
+
+jobs:
+  quality:
+    name: Backend Quality
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check TypeScript
+        run: npm run typecheck
+
+      - name: Validate architecture
+        run: npm run lint:architecture
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run tests and coverage
+        run: npm run test:ci
+        env:
+          NODE_ENV: test
+
+  security:
+    name: Security Checks
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan repository for secrets
+        run: |
+          docker run --rm \
+            --network none \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --user "$(id -u):$(id -g)" \
+            -v "$GITHUB_WORKSPACE:/repo:ro" \
+            ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+            git --redact=100 --log-opts="--all" /repo
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Audit dependencies
+        working-directory: backend
+        run: npm audit --audit-level=high
