@@ -8,18 +8,24 @@ import { KnowledgeQuery } from 'src/modules/knowledge/application/knowledge-quer
 import { AgentResult } from 'src/modules/agent/application/agent-query';
 import { CustomerIdentity } from 'src/modules/auth';
 import { ToolSelection } from '../../ports/agent-model.port';
+import type {
+    CancellationWorkflow,
+} from 'src/modules/cancellation/application/cancellation-workflow';
 
+import type {
+    AgentContext,
+} from 'src/modules/agent/application/agent-query';
 export class AgentTools {
     constructor(
         private readonly orderQuery: OrderQuery,
-
         private readonly knowledgeQuery: KnowledgeQuery,
+        private readonly cancellation?: CancellationWorkflow,
     ) { }
 
     public async execute(
         selection: ToolSelection,
-
         customer: CustomerIdentity,
+        context?: AgentContext,
     ): Promise<AgentResult> {
         if (selection.kind === 'none') {
             return { kind: 'no_tool' };
@@ -78,7 +84,34 @@ export class AgentTools {
                         knowledge,
                     };
                 }
+                case 'request_cancellation': {
+                    const args = getOrderSchema.safeParse(
+                        selection.args,
+                    );
 
+                    if (
+                        !args.success ||
+                        !context ||
+                        !this.cancellation
+                    ) {
+                        return { kind: 'invalid_tool' };
+                    }
+
+                    const cancellation =
+                        await this.cancellation.prepare(
+                            {
+                                customer,
+                                sessionId: context.sessionId,
+                                correlationId: context.correlationId,
+                            },
+                            args.data.orderId,
+                        );
+
+                    return {
+                        kind: 'cancellation',
+                        cancellation,
+                    };
+                }
                 default:
                     return { kind: 'invalid_tool' };
             }

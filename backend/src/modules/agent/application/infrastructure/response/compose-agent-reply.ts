@@ -1,5 +1,6 @@
 
 import { AgentReply, AgentResult } from '../../agent-query';
+import { cancellationReply } from '../../cancellation-reply';
 import { AgentModel } from '../../ports/agent-model.port';
 import {
     knowledgeAnswerSchema,
@@ -59,6 +60,9 @@ export async function composeAgentReply(
                 sources: [],
             };
         }
+
+        case 'cancellation':
+            return cancellationReply(result.cancellation);
 
         case 'knowledge': {
             if (result.knowledge.status === 'unavailable') {

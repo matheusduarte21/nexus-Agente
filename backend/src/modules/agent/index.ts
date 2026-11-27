@@ -9,4 +9,9 @@ export type {
   AgentResult,
   AgentReply,
   AgentRun,
+  AgentContext,
 } from './application/agent-query';
+
+export {
+  cancellationReply,
+} from './application/cancellation-reply';

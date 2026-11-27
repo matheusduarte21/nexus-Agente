@@ -2,8 +2,11 @@ import { KnowledgeEvidence } from "src/modules/knowledge/application/knowledge-q
 import { AgentModel, ToolSelection } from "../../ports/agent-model.port";
 
 export class MockAgentModel implements AgentModel {
+
     public selectTool(
         message: string,
+        _signal?: AbortSignal,
+        lastOrderId?: string,
     ): Promise<ToolSelection> {
         const normalized = message
             .normalize('NFKD')
@@ -15,14 +18,36 @@ export class MockAgentModel implements AgentModel {
             /\b(?:pedido|order)\s*#?\s*(\d{1,64})\b/,
         );
 
-        const orderId = orderMatch?.[1];
+        const explicitOrderId = orderMatch?.[1];
 
-        if (
-            orderId &&
-            /cancelar|cancel\b/.test(normalized)
-        ) {
+        const referencesPreviousOrder =
+            /\b(dele|desse pedido|esse pedido|deste pedido|the order|it)\b/
+                .test(normalized);
+
+        const orderId =
+            explicitOrderId ??
+            (
+                referencesPreviousOrder
+                    ? lastOrderId
+                    : undefined
+            );
+
+        const wantsCancellation =
+            /\b(cancelar|cancele|cancel)\b/
+                .test(normalized) &&
+            !/\b(nao|not|never)\b/.test(normalized);
+
+        if (wantsCancellation) {
+            if (!orderId) {
+                return Promise.resolve({
+                    kind: 'none',
+                });
+            }
+
             return Promise.resolve({
-                kind: 'none',
+                kind: 'call',
+                name: 'request_cancellation',
+                args: { orderId },
             });
         }
 
@@ -46,7 +71,9 @@ export class MockAgentModel implements AgentModel {
         return Promise.resolve({
             kind: 'call',
             name: 'search_knowledge',
-            args: { query: message },
+            args: {
+                query: message,
+            },
         });
     }
 

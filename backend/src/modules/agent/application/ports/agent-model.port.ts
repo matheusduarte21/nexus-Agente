@@ -16,6 +16,7 @@ export interface AgentModel {
     selectTool(
         message: string,
         signal?: AbortSignal,
+        lastOrderId?: string,
     ): Promise<ToolSelection>;
 
     generateKnowledgeAnswer(

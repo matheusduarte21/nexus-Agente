@@ -23,7 +23,14 @@ import {
     KnowledgeModule,
     SEARCH_KNOWLEDGE,
 } from '../knowledge';
+import {
+    CancellationModule,
+    CANCELLATION_WORKFLOW,
+} from '../cancellation';
 
+import type {
+    CancellationWorkflow,
+} from '../cancellation';
 import type {
     KnowledgeQuery,
 } from '../knowledge';
@@ -39,6 +46,7 @@ import { AgentTools } from './application/infrastructure/tools/agent-tools';
         ConfigModule,
         OrdersModule,
         KnowledgeModule,
+        CancellationModule,
     ],
 
     providers: [
@@ -97,15 +105,18 @@ import { AgentTools } from './application/infrastructure/tools/agent-tools';
             inject: [
                 GET_ORDER,
                 SEARCH_KNOWLEDGE,
+                CANCELLATION_WORKFLOW,
             ],
 
             useFactory: (
-                orderQuery: OrderQuery,
-                knowledgeQuery: KnowledgeQuery,
+                orders: OrderQuery,
+                knowledge: KnowledgeQuery,
+                cancellation: CancellationWorkflow,
             ): AgentTools =>
                 new AgentTools(
-                    orderQuery,
-                    knowledgeQuery,
+                    orders,
+                    knowledge,
+                    cancellation,
                 ),
         },
 

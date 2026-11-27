@@ -38,6 +38,7 @@ export class OpenAIAgentModel implements AgentModel {
     public async selectTool(
         message: string,
         signal?: AbortSignal,
+        lastOrderId?: string,
     ): Promise<ToolSelection> {
         const modelWithTools = this.model.bindTools(
             TOOL_DEFINITIONS,
@@ -50,7 +51,12 @@ export class OpenAIAgentModel implements AgentModel {
         const response = await modelWithTools.invoke(
             [
                 new SystemMessage(SYSTEM_PROMPT),
-                new HumanMessage(message),
+                new HumanMessage(
+                    JSON.stringify({
+                        message,
+                        lastOrderId: lastOrderId ?? null,
+                    }),
+                ),
             ],
             {
                 signal: this.createSignal(signal),

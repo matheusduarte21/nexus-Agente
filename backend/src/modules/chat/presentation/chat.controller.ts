@@ -1,91 +1,101 @@
+
+import { randomUUID } from 'node:crypto';
+
 import {
-    Body,
-    Controller,
-    ForbiddenException,
-    Header,
-    HttpCode,
-    HttpStatus,
-    Inject,
-    Post,
-    ServiceUnavailableException,
+  Body,
+  ConflictException,
+  Controller,
+  ForbiddenException,
+  Header,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 
+import type { Request } from 'express';
 
 import {
-    CurrentUser,
-    type CustomerIdentity,
-} from '../../auth';
-
-import {
-    AGENT_QUERY,
-} from '../../agent';
-
-import type {
-    AgentQuery,
-    AgentReply,
-} from '../../agent';
-
-import {
-    ZodValidationPipe,
-} from '../../../platform/http/validation/zod-validation.pipe';
-
-import {
-    chatRequestSchema,
+  chatRequestSchema,
 } from './schemas/chat-request.schema';
 
 import type {
-    ChatRequest,
+  ChatRequest,
 } from './schemas/chat-request.schema';
+import { AgentReply } from 'src/modules/agent';
+import { CurrentUser, CustomerIdentity } from 'src/modules/auth';
 import { ChatRateLimited } from 'src/modules/auth/auth.module';
+import { ZodValidationPipe } from 'src/platform/http/validation/zod-validation.pipe';
+import { ChatService, ChatBusyError } from '../application/ports/chat.service';
 
 type ChatResponse = AgentReply & {
-    readonly sessionId: string;
+  readonly sessionId: string;
 };
 
 @Controller('chat')
 export class ChatController {
-    constructor(
-        @Inject(AGENT_QUERY)
-        private readonly agent: AgentQuery,
-    ) { }
+  constructor(
+    private readonly service: ChatService,
+  ) {}
 
-    @Post()
-    @HttpCode(HttpStatus.OK)
-    @Header('Cache-Control', 'no-store')
-    @ChatRateLimited()
-    public async chat(
-        @CurrentUser()
-        customer: CustomerIdentity,
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  @Header('Cache-Control', 'no-store')
+  @ChatRateLimited()
+  public async chat(
+    @CurrentUser()
+    customer: CustomerIdentity,
 
-        @Body(
-            new ZodValidationPipe(chatRequestSchema),
-        )
-        body: ChatRequest,
-    ): Promise<ChatResponse> {
-        if (
-            body.userId !== undefined &&
-            body.userId !== customer.customerId
-        ) {
-            throw new ForbiddenException();
-        }
+    @Body(
+      new ZodValidationPipe(chatRequestSchema),
+    )
+    body: ChatRequest,
 
-        const { reply } = await this.agent.execute(
-            customer,
-            body.message,
-        );
-
-        if (reply.status === 'unavailable') {
-            throw new ServiceUnavailableException();
-        }
-
-        return {
-            sessionId: body.sessionId,
-
-            status: reply.status,
-
-            answer: reply.answer,
-
-            sources: reply.sources,
-        };
+    @Req()
+    request: Request,
+  ): Promise<ChatResponse> {
+    if (
+      body.userId !== undefined &&
+      body.userId !== customer.customerId
+    ) {
+      throw new ForbiddenException();
     }
+
+    const correlationId =
+      typeof request.id === 'string'
+        ? request.id
+        : randomUUID();
+
+    try {
+      const reply = await this.service.execute(
+        customer,
+        body.sessionId,
+        body.message,
+        correlationId,
+        body.confirmation,
+      );
+
+      if (reply.status === 'unavailable') {
+        throw new ServiceUnavailableException();
+      }
+
+      return {
+        sessionId: body.sessionId,
+        status: reply.status,
+        answer: reply.answer,
+        sources: reply.sources,
+
+        ...(reply.confirmation
+          ? { confirmation: reply.confirmation }
+          : {}),
+      };
+    } catch (error: unknown) {
+      if (error instanceof ChatBusyError) {
+        throw new ConflictException();
+      }
+
+      throw error;
+    }
+  }
 }

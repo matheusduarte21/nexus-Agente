@@ -9,6 +9,7 @@ import {
     text,
     timestamp,
     unique,
+    uniqueIndex,
     uuid,
     varchar,
 } from 'drizzle-orm/pg-core';
@@ -87,7 +88,28 @@ export const cancellationRequests = pgTable(
                 chatSessions.id,
             ],
         }).onDelete('restrict'),
+            uniqueIndex('cancellation_active_session_unique')
+            .on(
+                table.customerId,
+                table.sessionId,
+            )
+            .where(sql`${table.status} IN (
+                'awaiting_confirmation',
+                'confirmed',
+                'processing'
+            )`),
 
+        uniqueIndex('cancellation_active_order_unique')
+            .on(
+                table.customerId,
+                table.orderId,
+            )
+            .where(sql`${table.status} IN (
+                'awaiting_confirmation',
+                'confirmed',
+                'processing',
+                'requested'
+            )`),
         unique('cancellation_idempotency_unique')
             .on(
                 table.customerId,
@@ -128,20 +150,20 @@ export const cancellationRequests = pgTable(
             'cancellation_confirmation_required',
             sql`(
         ${table.status} IN (
-          'confirmed',
-          'processing',
-          'requested',
-          'failed'
+            'confirmed',
+            'processing',
+            'requested',
+            'failed'
         )
         AND ${table.confirmedAt} IS NOT NULL
-      ) OR (
-        ${table.status} IN (
-          'awaiting_confirmation',
-          'rejected',
-          'expired'
-        )
-        AND ${table.confirmedAt} IS NULL
-      )`,
+        ) OR (
+            ${table.status} IN (
+            'awaiting_confirmation',
+            'rejected',
+            'expired'
+            )
+            AND ${table.confirmedAt} IS NULL
+        )`,
         ),
 
         check(

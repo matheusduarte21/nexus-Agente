@@ -4,7 +4,6 @@ import {
     END,
 } from '@langchain/langgraph';
 
-
 import {
     AgentState,
 } from './agent.state';
@@ -23,7 +22,7 @@ import {
 } from '../response/compose-agent-reply';
 import { AgentQuery } from 'src/modules/agent';
 import { CustomerIdentity } from 'src/modules/auth';
-import { AgentRun } from '../../agent-query';
+import { AgentRun, AgentContext, } from '../../agent-query';
 import { AgentModel } from '../../ports/agent-model.port';
 
 export class LangGraphAgent implements AgentQuery {
@@ -35,6 +34,7 @@ export class LangGraphAgent implements AgentQuery {
     public async execute(
         customer: CustomerIdentity,
         message: string,
+        context?: AgentContext,
     ): Promise<AgentRun> {
         if (
             typeof message !== 'string' ||
@@ -75,6 +75,7 @@ export class LangGraphAgent implements AgentQuery {
                             await this.model.selectTool(
                                 state.message,
                                 signal,
+                                context?.lastOrderId ?? undefined,
                             );
 
                         return { selection };
@@ -90,6 +91,7 @@ export class LangGraphAgent implements AgentQuery {
                             await this.tools.execute(
                                 state.selection,
                                 trustedCustomer,
+                                context,
                             );
 
                         signal.throwIfAborted();

@@ -22,6 +22,10 @@ function createOrderServer(serviceToken) {
 
   const expectedAuthorization = Buffer.from(`Bearer ${serviceToken}`);
 
+  const cancellationKeys = new Map();
+
+  const cancelledOrders = new Map();
+
   return createServer(
     {
       requestTimeout: 5000,
@@ -54,15 +58,26 @@ function createOrderServer(serviceToken) {
         });
       }
 
-      const match = /^\/orders\/([A-Za-z0-9_-]{1,64})$/.exec(request.url ?? '');
+      const readMatch = /^\/orders\/([A-Za-z0-9_-]{1,64})$/.exec(
+        request.url ?? '',
+      );
 
-      if (request.method !== 'GET' || !match) {
+      const cancelMatch =
+        /^\/orders\/([A-Za-z0-9_-]{1,64})\/cancellation-request$/.exec(
+          request.url ?? '',
+        );
+
+      const isRead = request.method === 'GET' && readMatch;
+
+      const isCancellation = request.method === 'POST' && cancelMatch;
+
+      if (!isRead && !isCancellation) {
         return sendJson(response, 404, {
           message: 'Not Found',
         });
       }
 
-      const orderId = match[1];
+      const orderId = isRead ? readMatch[1] : cancelMatch[1];
 
       const order = orders.find(
         (item) => item.id === orderId && item.customerId === customerId,
@@ -74,7 +89,56 @@ function createOrderServer(serviceToken) {
         });
       }
 
-      return sendJson(response, 200, order);
+      if (isRead) {
+        return sendJson(response, 200, order);
+      }
+
+      const idempotencyKey = request.headers['idempotency-key'];
+
+      if (
+        typeof idempotencyKey !== 'string' ||
+        !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
+          idempotencyKey,
+        )
+      ) {
+        return sendJson(response, 400, {
+          message: 'Invalid idempotency key',
+        });
+      }
+
+      const scopedKey = JSON.stringify([customerId, idempotencyKey]);
+
+      const scopedOrder = JSON.stringify([customerId, orderId]);
+
+      const existing = cancellationKeys.get(scopedKey);
+
+      if (existing) {
+        if (existing.orderId !== orderId) {
+          return sendJson(response, 409, {
+            message: 'Idempotency conflict',
+          });
+        }
+
+        return sendJson(response, 202, existing);
+      }
+
+      if (!order.canCancel || cancelledOrders.has(scopedOrder)) {
+        return sendJson(response, 409, {
+          message: 'Cancellation unavailable',
+        });
+      }
+
+      const result = {
+        orderId,
+
+        status: 'cancellation_requested',
+      };
+
+      cancellationKeys.set(scopedKey, result);
+
+      cancelledOrders.set(scopedOrder, idempotencyKey);
+
+      return sendJson(response, 202, result);
     },
   );
 }

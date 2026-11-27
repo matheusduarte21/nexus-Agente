@@ -5,8 +5,17 @@ import type {
     KnowledgeCitation,
     KnowledgeSearchResponse,
 } from '../../knowledge';
-
+import type {
+    CancellationOutcome,
+    PendingConfirmation,
+} from '../../cancellation';
 export const AGENT_QUERY = Symbol('AGENT_QUERY');
+
+export interface AgentContext {
+    readonly sessionId: string;
+    readonly correlationId: string;
+    readonly lastOrderId: string | null;
+}
 
 export type AgentResult =
     | {
@@ -23,7 +32,11 @@ export type AgentResult =
         | 'not_found'
         | 'invalid_tool'
         | 'unavailable';
-    };
+    }
+    | {
+        readonly kind: 'cancellation';
+        readonly cancellation: CancellationOutcome;
+    }
 
 export interface AgentReply {
     readonly status:
@@ -32,21 +45,31 @@ export interface AgentReply {
     | 'not_found'
     | 'needs_input'
     | 'invalid_tool'
-    | 'unavailable';
+    | 'unavailable'
+    | 'confirmation_required'
+    | 'cancellation_requested'
+    | 'cancellation_rejected'
+    | 'cancellation_processing'
+    | 'cancellation_expired'
+    | 'cancellation_not_eligible'
+    | 'cancellation_conflict'
+    | 'cancellation_failed';
 
     readonly answer: string;
 
     readonly sources: readonly KnowledgeCitation[];
+
+    readonly confirmation?: PendingConfirmation;
 }
 
 export interface AgentRun {
     readonly result: AgentResult;
     readonly reply: AgentReply;
 }
-
 export interface AgentQuery {
-    execute(
-        customer: CustomerIdentity,
-        message: string,
-    ): Promise<AgentRun>;
+  execute(
+    customer: CustomerIdentity,
+    message: string,
+    context?: AgentContext,
+  ): Promise<AgentRun>;
 }

@@ -54,6 +54,34 @@ export const TOOL_DEFINITIONS = [
         type: 'function' as const,
 
         function: {
+            name: 'request_cancellation',
+
+            description:
+                'Prepare a cancellation request for an order. Requires separate explicit customer confirmation before any external action.',
+
+            strict: true,
+
+            parameters: {
+                type: 'object',
+
+                properties: {
+                    orderId: {
+                        type: 'string',
+                        description: 'Order identifier to be cancelled.',
+                    },
+                },
+
+                required: ['orderId'],
+
+                additionalProperties: false,
+            },
+        },
+    },
+
+    {
+        type: 'function' as const,
+
+        function: {
             name: 'search_knowledge',
 
             description:

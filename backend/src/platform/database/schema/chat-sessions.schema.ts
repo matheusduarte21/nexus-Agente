@@ -13,6 +13,10 @@ export const chatSessions = pgTable(
             length: 128,
         }).notNull(),
 
+        lastOrderId: varchar('last_order_id', {
+            length: 64,
+        }),
+        
         customerId: varchar('customer_id', {
             length: 128,
         }).notNull(),

@@ -21,6 +21,18 @@ export const chatRequestSchema = z
             .min(1)
             .max(128)
             .optional(),
+
+        confirmation: z
+            .object({
+                requestId: z.string().uuid(),
+
+                decision: z.enum([
+                    'confirm',
+                    'reject',
+                ]),
+            })
+            .strict()
+            .optional(),
     })
     .strict();
 
