@@ -135,7 +135,54 @@ export const envSchema = z.object({
         .regex(/^[a-f0-9]{64}$/)
         .optional(),
     CORS_ORIGIN: httpOriginSchema.optional(),
-});
+    }).superRefine((env, ctx) => {
+        if (env.NODE_ENV === 'test') {
+            return;
+        }
+
+        const requiredFields = [
+            'DATABASE_URL',
+            'ORDER_API_BASE_URL',
+            'ORDER_API_TOKEN',
+        ] as const;
+
+        for (const field of requiredFields) {
+            if (!env[field]) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: [field],
+                    message: 'Required configuration',
+                });
+            }
+        }
+
+        if (
+            (env.LLM_PROVIDER === 'openai' ||
+                env.EMBEDDING_PROVIDER === 'openai') &&
+            !env.OPENAI_API_KEY
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['OPENAI_API_KEY'],
+                message: 'Required OpenAI configuration',
+            });
+        }
+
+        if (env.LANGFUSE_ENABLED) {
+            for (const field of [
+                'LANGFUSE_PUBLIC_KEY',
+                'LANGFUSE_SECRET_KEY',
+            ] as const) {
+                if (!env[field]) {
+                    ctx.addIssue({
+                        code: 'custom',
+                        path: [field],
+                        message: 'Required Langfuse configuration',
+                    });
+                }
+            }
+        }
+    });
 
 export type Environment = z.infer<typeof envSchema>;
 

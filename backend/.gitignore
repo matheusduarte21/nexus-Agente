@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+*.log
+
+.env
+.env.*
+
+!.env.example
+!.env.db.example
+!.env.migrations.example
+!.env.ingestion.example
+!.env.order-api.example
+!.env.db.test.example
+!.env.integration.example
