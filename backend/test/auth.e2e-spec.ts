@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 
 import { Controller, Get } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -10,10 +11,7 @@ import { AppModule } from '../src/app.module';
 import { configureHttp } from '../src/platform/http/configure-http';
 
 import { AUTHENTICATOR } from '../src/modules/auth';
-import type {
-  Authenticator,
-  CustomerIdentity,
-} from '../src/modules/auth';
+import type { Authenticator, CustomerIdentity } from '../src/modules/auth';
 
 @Controller('auth-probe')
 class ProtectedProbeController {
@@ -46,9 +44,7 @@ describe('Authentication (e2e)', () => {
       }
 
       if (credential === unavailableToken) {
-        return Promise.reject(
-          new Error('Sensitive internal provider failure'),
-        );
+        return Promise.reject(new Error('Sensitive internal provider failure'));
       }
 
       return Promise.resolve(null);
@@ -68,16 +64,15 @@ describe('Authentication (e2e)', () => {
       .useValue(authenticator)
       .compile();
 
-    app =
-      moduleRef.createNestApplication<NestExpressApplication>({
-        bodyParser: false,
-      });
+    app = moduleRef.createNestApplication<NestExpressApplication>({
+      bodyParser: false,
+    });
 
     configureHttp(app, 'http://localhost:3001');
 
     await app.init();
 
-    server = app.getHttpServer() as Server;
+    server = app.getHttpServer();
   });
 
   beforeEach(() => {
@@ -101,10 +96,7 @@ describe('Authentication (e2e)', () => {
     await request(server)
       .get('/auth/me')
       .expect(401)
-      .expect(
-        'WWW-Authenticate',
-        'Bearer realm="nexus-commerce"',
-      );
+      .expect('WWW-Authenticate', 'Bearer realm="nexus-commerce"');
 
     expect(authenticate).not.toHaveBeenCalled();
   });
@@ -167,9 +159,7 @@ describe('Authentication (e2e)', () => {
   });
 
   it('should protect new endpoints by default', async () => {
-    await request(server)
-      .get('/auth-probe')
-      .expect(401);
+    await request(server).get('/auth-probe').expect(401);
   });
 
   it('should allow authenticated access to protected endpoints', async () => {

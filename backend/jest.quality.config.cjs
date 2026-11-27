@@ -1,35 +1,52 @@
 module.exports = {
-    rootDir: '.',
+  rootDir: '.',
 
-    roots: ['<rootDir>/src', '<rootDir>/test'],
+  roots: ['<rootDir>/src', '<rootDir>/test'],
 
-    moduleFileExtensions: ['js', 'json', 'ts'],
+  moduleFileExtensions: ['js', 'json', 'ts'],
 
-    testRegex: '(\\.spec|\\.e2e-spec)\\.ts$',
+  moduleNameMapper: {
+    '^src/(.*)$': '<rootDir>/src/$1',
+  },
 
-    transform: {
-        '^.+\\.(t|j)s$': 'ts-jest',
-    },
+  setupFiles: ['<rootDir>/test/jest.setup.cjs'],
 
-    testEnvironment: 'node',
+  testRegex: '(\\.spec|\\.e2e-spec)\\.ts$',
 
-    collectCoverageFrom: [
-        'src/**/*.ts',
-        '!src/**/*.spec.ts',
-        '!src/**/*.d.ts',
-        '!src/main.ts',
-    ],
-
-    coverageDirectory: '<rootDir>/coverage',
-
-    coverageReporters: ['text', 'lcov', 'json-summary', 'html'],
-
-    coverageThreshold: {
-        global: {
-        statements: 60,
-        branches: 50,
-        functions: 60,
-        lines: 60,
+  transform: {
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        useESM: true,
+        tsconfig: {
+          module: 'ESNext',
+          moduleResolution: 'Bundler',
         },
+      },
+    ],
+  },
+
+  extensionsToTreatAsEsm: ['.ts'],
+
+  testEnvironment: 'node',
+
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.spec.ts',
+    '!src/**/*.d.ts',
+    '!src/main.ts',
+  ],
+
+  coverageDirectory: '<rootDir>/coverage',
+
+  coverageReporters: ['text', 'lcov', 'json-summary', 'html'],
+
+  coverageThreshold: {
+    global: {
+      statements: 60,
+      branches: 50,
+      functions: 60,
+      lines: 60,
     },
+  },
 };

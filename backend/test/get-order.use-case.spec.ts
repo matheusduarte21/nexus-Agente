@@ -1,18 +1,19 @@
+import { jest } from '@jest/globals';
 
-import { GetOrderUseCase } from './get-order.use-case';
+import { GetOrderUseCase } from '../src/modules/orders/application/use-cases/get-order.use-case';
 
-import { OrderAccessPolicy } from '../../domain/policies/order-access.policy';
+import { OrderAccessPolicy } from '../src/modules/orders/domain/policies/order-access.policy';
 
-import type { Order } from '../../domain/order';
+import type { IOrder } from '../src/modules/orders/domain/order';
 
-import { InvalidOrderIdError } from '../errors/invalid-order-id.error';
+import { InvalidOrderIdError } from '../src/modules/orders/application/errors/invalid-order-id.error';
 
 describe('GetOrderUseCase', () => {
   const customer = {
     customerId: 'customer-001',
   };
 
-  const order: Order = {
+  const order: IOrder = {
     id: '12345',
     customerId: 'customer-001',
     status: 'delayed',
@@ -24,18 +25,11 @@ describe('GetOrderUseCase', () => {
   const policy = new OrderAccessPolicy();
 
   it('should return an authorized order', async () => {
-    const findByIdForCustomer = jest.fn(() =>
-      Promise.resolve(order),
-    );
+    const findByIdForCustomer = jest.fn(() => Promise.resolve(order));
 
-    const useCase = new GetOrderUseCase(
-      { findByIdForCustomer },
-      policy,
-    );
+    const useCase = new GetOrderUseCase({ findByIdForCustomer }, policy);
 
-    await expect(
-      useCase.execute(customer, '12345'),
-    ).resolves.toEqual({
+    await expect(useCase.execute(customer, '12345')).resolves.toEqual({
       id: '12345',
       status: 'delayed',
       estimatedDelivery: '2026-11-25',
@@ -43,118 +37,76 @@ describe('GetOrderUseCase', () => {
       canCancel: true,
     });
 
-    expect(
-      findByIdForCustomer,
-    ).toHaveBeenCalledWith(
-      '12345',
-      'customer-001',
-    );
+    expect(findByIdForCustomer).toHaveBeenCalledWith('12345', 'customer-001');
   });
 
   it('should return null when the order does not exist', async () => {
     const useCase = new GetOrderUseCase(
       {
-        findByIdForCustomer: jest.fn(() =>
-          Promise.resolve(null),
-        ),
+        findByIdForCustomer: jest.fn(() => Promise.resolve(null)),
       },
       policy,
     );
 
-    await expect(
-      useCase.execute(customer, '99999'),
-    ).resolves.toBeNull();
+    await expect(useCase.execute(customer, '99999')).resolves.toBeNull();
   });
 
   it('should reject an order belonging to another customer even when the adapter returns it', async () => {
-    const unauthorizedOrder: Order = {
+    const unauthorizedOrder: IOrder = {
       ...order,
       customerId: 'customer-002',
     };
 
     const useCase = new GetOrderUseCase(
       {
-        findByIdForCustomer: jest.fn(() =>
-          Promise.resolve(unauthorizedOrder),
-        ),
+        findByIdForCustomer: jest.fn(() => Promise.resolve(unauthorizedOrder)),
       },
       policy,
     );
 
-    await expect(
-      useCase.execute(customer, '12345'),
-    ).resolves.toBeNull();
+    await expect(useCase.execute(customer, '12345')).resolves.toBeNull();
   });
 
   it('should reject an unexpected order identifier', async () => {
-    const unexpectedOrder: Order = {
+    const unexpectedOrder: IOrder = {
       ...order,
       id: '67890',
     };
 
     const useCase = new GetOrderUseCase(
       {
-        findByIdForCustomer: jest.fn(() =>
-          Promise.resolve(unexpectedOrder),
-        ),
+        findByIdForCustomer: jest.fn(() => Promise.resolve(unexpectedOrder)),
       },
       policy,
     );
 
-    await expect(
-      useCase.execute(customer, '12345'),
-    ).resolves.toBeNull();
+    await expect(useCase.execute(customer, '12345')).resolves.toBeNull();
   });
 
   it('should not query orders without a customer identity', async () => {
-    const findByIdForCustomer = jest.fn(() =>
-      Promise.resolve(order),
-    );
+    const findByIdForCustomer = jest.fn(() => Promise.resolve(order));
 
-    const useCase = new GetOrderUseCase(
-      { findByIdForCustomer },
-      policy,
-    );
+    const useCase = new GetOrderUseCase({ findByIdForCustomer }, policy);
 
     await expect(
-      useCase.execute(
-        { customerId: '' },
-        '12345',
-      ),
+      useCase.execute({ customerId: '' }, '12345'),
     ).resolves.toBeNull();
 
-    expect(
-      findByIdForCustomer,
-    ).not.toHaveBeenCalled();
+    expect(findByIdForCustomer).not.toHaveBeenCalled();
   });
 
-  it.each([
-    '',
-    '../12345',
-    '12345 67890',
-    '12345\n',
-    'a'.repeat(65),
-  ])(
+  it.each(['', '../12345', '12345 67890', '12345\n', 'a'.repeat(65)])(
     'should reject invalid identifiers before querying the adapter',
     async (orderId) => {
-      const findByIdForCustomer = jest.fn(() =>
-        Promise.resolve(order),
-      );
+      const findByIdForCustomer = jest.fn(() => Promise.resolve(order));
 
-      const useCase = new GetOrderUseCase(
-        { findByIdForCustomer },
-        policy,
-      );
+      const useCase = new GetOrderUseCase({ findByIdForCustomer }, policy);
 
-      await expect(
-        useCase.execute(customer, orderId),
-      ).rejects.toBeInstanceOf(
+      await expect(useCase.execute(customer, orderId)).rejects.toBeInstanceOf(
         InvalidOrderIdError,
       );
 
-      expect(
-        findByIdForCustomer,
-      ).not.toHaveBeenCalled();
+      expect(findByIdForCustomer).not.toHaveBeenCalled();
     },
   );
 
@@ -162,17 +114,13 @@ describe('GetOrderUseCase', () => {
     const useCase = new GetOrderUseCase(
       {
         findByIdForCustomer: jest.fn(() =>
-          Promise.reject(
-            new Error('Order provider unavailable'),
-          ),
+          Promise.reject(new Error('Order provider unavailable')),
         ),
       },
       policy,
     );
 
-    await expect(
-      useCase.execute(customer, '12345'),
-    ).rejects.toThrow(
+    await expect(useCase.execute(customer, '12345')).rejects.toThrow(
       'Order provider unavailable',
     );
   });

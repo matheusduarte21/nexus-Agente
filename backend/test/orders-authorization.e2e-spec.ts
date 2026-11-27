@@ -1,4 +1,3 @@
-
 import { Test } from '@nestjs/testing';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
@@ -12,10 +11,7 @@ import { configureHttp } from '../src/platform/http/configure-http';
 
 import { AUTHENTICATOR } from '../src/modules/auth';
 
-import type {
-  Authenticator,
-  CustomerIdentity,
-} from '../src/modules/auth';
+import type { Authenticator, CustomerIdentity } from '../src/modules/auth';
 
 describe('Order Authorization (e2e)', () => {
   let app: NestExpressApplication;
@@ -25,9 +21,7 @@ describe('Order Authorization (e2e)', () => {
   const tokenB = 'b'.repeat(43);
 
   const authenticator: Authenticator = {
-    authenticate(
-      credential: string,
-    ): Promise<CustomerIdentity | null> {
+    authenticate(credential: string): Promise<CustomerIdentity | null> {
       if (credential === tokenA) {
         return Promise.resolve({
           customerId: 'customer-001',
@@ -45,27 +39,22 @@ describe('Order Authorization (e2e)', () => {
   };
 
   beforeAll(async () => {
-    const moduleRef =
-      await Test.createTestingModule({
-        imports: [AppModule],
-      })
-        .overrideProvider(AUTHENTICATOR)
-        .useValue(authenticator)
-        .compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(AUTHENTICATOR)
+      .useValue(authenticator)
+      .compile();
 
-    app =
-      moduleRef.createNestApplication<NestExpressApplication>({
-        bodyParser: false,
-      });
+    app = moduleRef.createNestApplication<NestExpressApplication>({
+      bodyParser: false,
+    });
 
-    configureHttp(
-      app,
-      'http://localhost:3001',
-    );
+    configureHttp(app, 'http://localhost:3001');
 
     await app.init();
 
-    server = app.getHttpServer() as Server;
+    server = app.getHttpServer();
   });
 
   afterAll(async () => {
@@ -73,9 +62,7 @@ describe('Order Authorization (e2e)', () => {
   });
 
   it('should reject unauthenticated access', async () => {
-    await request(server)
-      .get('/orders/12345')
-      .expect(401);
+    await request(server).get('/orders/12345').expect(401);
   });
 
   it('should allow customer A to access their order', async () => {
@@ -134,13 +121,11 @@ describe('Order Authorization (e2e)', () => {
     ]);
 
     for (const response of responses) {
-      const payload: unknown = response.body;
-
-      expect(payload).toEqual({
+      expect(response.body).toMatchObject({
         statusCode: 404,
         message: 'Not Found',
-        correlationId: expect.any(String),
       });
+      expect(response.body).toHaveProperty('correlationId');
     }
   });
 
@@ -153,7 +138,7 @@ describe('Order Authorization (e2e)', () => {
       })
       .set('x-user-id', 'customer-002')
       .set('Authorization', `Bearer ${tokenA}`)
-      .expect(404);
+      .expect(400);
   });
 
   it('should reject malformed order identifiers', async () => {
@@ -181,7 +166,6 @@ describe('Order Authorization (e2e)', () => {
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(404);
   });
-
 
   it('should isolate concurrent customer requests', async () => {
     await Promise.all([

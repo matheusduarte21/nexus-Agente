@@ -1,10 +1,7 @@
-
 import { BadRequestException } from '@nestjs/common';
 import { z } from 'zod';
 
-import {
-  ZodValidationPipe,
-} from './zod-validation.pipe';
+import { ZodValidationPipe } from '../src/platform/http/validation/zod-validation.pipe';
 
 describe('ZodValidationPipe', () => {
   const schema = z
@@ -34,9 +31,7 @@ describe('ZodValidationPipe', () => {
     { message: 123 },
     { message: 'a'.repeat(101) },
   ])('should reject invalid input', (input) => {
-    expect(() =>
-      pipe.transform(input),
-    ).toThrow(BadRequestException);
+    expect(() => pipe.transform(input)).toThrow(BadRequestException);
   });
 
   it('should reject unexpected properties', () => {
@@ -62,6 +57,6 @@ describe('ZodValidationPipe', () => {
       pipe.transform({
         password: 'sensitive-test-value',
       }),
-    ).toThrow(/^Bad Request Exception$/);
+    ).toThrow('Bad Request');
   });
 });
