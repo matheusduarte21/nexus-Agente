@@ -1,6 +1,6 @@
 const { createServer } = require('node:http');
 const { timingSafeEqual } = require('node:crypto');
-const orders = require('./fixtures/orders.json');
+const orders = require('./orders.json');
 
 function sendJson(response, statusCode, data) {
   response.writeHead(statusCode, {

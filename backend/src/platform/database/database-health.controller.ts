@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 
 
-import { DatabaseService } from '../database.service';
+import { DatabaseService } from '../database/database.service';
 import { Public } from 'src/modules/auth/presentation/decorators/public.decorator';
 
 @Controller('health')

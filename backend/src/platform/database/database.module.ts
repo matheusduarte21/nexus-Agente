@@ -2,7 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
-import { DatabaseService } from '../database.service';
+import { DatabaseService } from '../database/database.service';
 import { DatabaseHealthController } from './database-health.controller';
 
 @Module({

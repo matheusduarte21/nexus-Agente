@@ -157,10 +157,12 @@ export class OpenAIAgentModel implements AgentModel {
                         },
                     );
 
-                recordUsage(
-                    result.raw.usage_metadata?.input_tokens,
-                    result.raw.usage_metadata?.output_tokens,
-                );
+                const usage = AIMessage.isInstance(result.raw)
+                    ? result.raw.usage_metadata
+                    : undefined;
+
+                recordUsage(usage?.input_tokens, usage?.output_tokens);
+
                 return result.parsed;
             },
         );
