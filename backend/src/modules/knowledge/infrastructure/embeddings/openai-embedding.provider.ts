@@ -20,6 +20,7 @@ import {
 } from './embedding-validation';
 import { observeGeneration } from 'src/platform/observability/telemetry';
 
+
 export class OpenAIEmbeddingProvider
     implements EmbeddingProvider {
     public readonly model = OPENAI_EMBEDDING_MODEL;

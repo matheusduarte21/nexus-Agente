@@ -15,6 +15,13 @@
       "when": 1795781486763,
       "tag": "0001_database_security",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795781888687,
+      "tag": "0002_knowledge_full_text_search",
+      "breakpoints": true
     }
   ]
 }

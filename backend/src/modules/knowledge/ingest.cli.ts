@@ -20,11 +20,10 @@ import { DocumentChunker } from './infrastructure/documents/document-chunker';
 
 import { MockEmbeddingProvider } from './infrastructure/embeddings/mock-embedding.provider';
 
-import { OpenAIEmbeddingProvider } from './infrastructure/embeddings/openai-embedding.provider';
-
 import { PostgresKnowledgeWriter } from './infrastructure/persistence/postgres-knowledge-writer';
 
 import { IngestKnowledgeUseCase } from './application/use-cases/ingest-knowledge.use-case';
+import { OpenAIEmbeddingProvider } from './infrastructure/embeddings/openai-embedding.provider';
 
 const ingestionConfigSchema = z.object({
     INGESTION_DATABASE_URL: z.string().refine((value) => {
@@ -156,10 +155,14 @@ function getRequiredApiKey(
     return apiKey;
 }
 
-void main().catch(() => {
+void main().catch((error: unknown) => {
     process.stderr.write(
         'Knowledge ingestion failed. Verify configuration and documents.\n',
     );
+
+    if (process.env.DEBUG_INGESTION) {
+        console.error(error);
+    }
 
     process.exitCode = 1;
 });

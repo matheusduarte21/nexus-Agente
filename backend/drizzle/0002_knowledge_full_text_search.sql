@@ -1,0 +1,1 @@
+CREATE INDEX "knowledge_chunks_fts_idx" ON "knowledge_chunks" USING gin (to_tsvector('portuguese', "content"));

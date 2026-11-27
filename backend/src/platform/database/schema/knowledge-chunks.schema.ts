@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 
 import {
     check,
+    index,
     integer,
     pgTable,
     text,
@@ -77,6 +78,11 @@ export const knowledgeChunks = pgTable(
             'knowledge_chunk_page_positive',
             sql`${table.pageNumber} > 0`,
         ),
+        index('knowledge_chunks_fts_idx')
+            .using(
+                'gin',
+                sql`to_tsvector('portuguese', ${table.content})`,
+            ),
     ],
 );
 

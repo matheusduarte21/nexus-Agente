@@ -25,7 +25,8 @@
     "audit:dependencies": "npm audit --audit-level=high",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:check": "drizzle-kit check","knowledge:ingest": "ts-node src/modules/knowledge/ingest.cli.ts",
+    "db:check": "drizzle-kit check",
+    "knowledge:ingest": "ts-node -r tsconfig-paths/register src/modules/knowledge/ingest.cli.ts",
     "prepare": "cd .. && husky backend/.husky",
     "quality": "npm run format:check && npm run lint && npm run typecheck && npm run lint:architecture && npm run build && npm run test:ci"
   },
