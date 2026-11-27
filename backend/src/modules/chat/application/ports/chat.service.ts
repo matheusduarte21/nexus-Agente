@@ -2,6 +2,7 @@ import { AgentQuery, AgentReply, cancellationReply } from "src/modules/agent";
 import { CustomerIdentity } from "src/modules/auth";
 import { CancellationWorkflow } from "src/modules/cancellation";
 import { ChatMemory } from "./chat-memory.port";
+import { observeStage } from "src/platform/observability/telemetry";
 
 export interface ChatConfirmation {
     readonly requestId: string;
@@ -43,9 +44,13 @@ export class ChatService {
         this.activeSessions.add(key);
 
         try {
-            const session = await this.memory.open(
-                customer,
-                sessionId,
+            const session = await observeStage(
+                'memory',
+                () =>
+                    this.memory.open(
+                        customer,
+                        sessionId,
+                    ),
             );
 
             let reply: AgentReply;
@@ -53,15 +58,18 @@ export class ChatService {
             let lastOrderId: string | undefined;
 
             if (confirmation) {
-                // Explicit confirmations bypass the LLM.
-                const outcome = await this.cancellation.decide(
-                    {
-                        customer,
-                        sessionId,
-                        correlationId,
-                    },
-                    confirmation.requestId,
-                    confirmation.decision,
+                const outcome = await observeStage(
+                    'confirmation',
+                    () =>
+                        this.cancellation.decide(
+                            {
+                                customer,
+                                sessionId,
+                                correlationId,
+                            },
+                            confirmation.requestId,
+                            confirmation.decision,
+                        ),
                 );
 
                 reply = cancellationReply(outcome);
@@ -108,12 +116,16 @@ export class ChatService {
                 ? `Cancellation decision: ${confirmation.decision}`
                 : message;
 
-            await this.memory.appendTurn(
-                customer,
-                sessionId,
-                storedMessage,
-                reply.answer,
-                lastOrderId,
+            await observeStage(
+                'persistence',
+                () =>
+                    this.memory.appendTurn(
+                        customer,
+                        sessionId,
+                        storedMessage,
+                        reply.answer,
+                        lastOrderId,
+                    ),
             );
 
             return reply;

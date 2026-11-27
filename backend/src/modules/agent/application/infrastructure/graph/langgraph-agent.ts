@@ -3,7 +3,9 @@ import {
     START,
     END,
 } from '@langchain/langgraph';
-
+import {
+    observeStage,
+} from 'src/platform/observability/telemetry';
 import {
     AgentState,
 } from './agent.state';
@@ -71,12 +73,15 @@ export class LangGraphAgent implements AgentQuery {
                     async (state: AgentGraphState) => {
                         signal.throwIfAborted();
 
-                        const selection =
-                            await this.model.selectTool(
-                                state.message,
-                                signal,
-                                context?.lastOrderId ?? undefined,
-                            );
+                        const selection = await observeStage(
+                            'model',
+                            () =>
+                                this.model.selectTool(
+                                    state.message,
+                                    signal,
+                                    context?.lastOrderId ?? undefined,
+                                ),
+                        );
 
                         return { selection };
                     },
@@ -87,12 +92,15 @@ export class LangGraphAgent implements AgentQuery {
                     async (state: AgentGraphState) => {
                         signal.throwIfAborted();
 
-                        const result =
-                            await this.tools.execute(
-                                state.selection,
-                                trustedCustomer,
-                                context,
-                            );
+                        const result = await observeStage(
+                            'tool',
+                            () =>
+                                this.tools.execute(
+                                    state.selection,
+                                    trustedCustomer,
+                                    context,
+                                ),
+                        );
 
                         signal.throwIfAborted();
 
@@ -105,13 +113,16 @@ export class LangGraphAgent implements AgentQuery {
                     async (state: AgentGraphState) => {
                         signal.throwIfAborted();
 
-                        const reply =
-                            await composeAgentReply(
-                                this.model,
-                                state.message,
-                                state.result,
-                                signal,
-                            );
+                        const reply = await observeStage(
+                            'answer',
+                            () =>
+                                composeAgentReply(
+                                    this.model,
+                                    state.message,
+                                    state.result,
+                                    signal,
+                                ),
+                        );
 
                         signal.throwIfAborted();
 

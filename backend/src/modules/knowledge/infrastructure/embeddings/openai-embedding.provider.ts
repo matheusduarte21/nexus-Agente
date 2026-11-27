@@ -18,6 +18,7 @@ import {
     isValidEmbedding,
     validateEmbeddingInputs,
 } from './embedding-validation';
+import { observeGeneration } from 'src/platform/observability/telemetry';
 
 export class OpenAIEmbeddingProvider
     implements EmbeddingProvider {
@@ -47,16 +48,27 @@ export class OpenAIEmbeddingProvider
         validateEmbeddingInputs(texts);
 
         try {
-            const response =
-                await this.client.embeddings.create({
-                    model: this.model,
+            const response = await observeGeneration(
+                'embedding',
+                this.model,
 
-                    input: texts,
+                async (recordUsage) => {
+                    const result =
+                        await this.client.embeddings.create({
+                            model: this.model,
+                            input: texts,
+                            dimensions: this.dimensions,
+                            encoding_format: 'float',
+                        });
 
-                    dimensions: this.dimensions,
+                    recordUsage(
+                        result.usage.prompt_tokens,
+                        0,
+                    );
 
-                    encoding_format: 'float',
-                });
+                    return result;
+                },
+            );
 
             const results = [...response.data].sort(
                 (first, second) =>

@@ -4,11 +4,13 @@ import {
     HumanMessage,
     SystemMessage,
 } from '@langchain/core/messages';
-
-
+import {
+    observeGeneration,
+} from 'src/platform/observability/telemetry';
 import { SYSTEM_PROMPT } from '../prompts/system.prompt';
 import { ANSWER_PROMPT } from '../prompts/answer.prompt';
 import { TOOL_DEFINITIONS } from '../tools/tool-definitions';
+import { AIMessage } from '@langchain/core/messages';
 
 import {
     knowledgeAnswerSchema,
@@ -18,8 +20,11 @@ import { KnowledgeEvidence } from 'src/modules/knowledge';
 
 export class OpenAIAgentModel implements AgentModel {
     private readonly model: ChatOpenAI;
+    private readonly modelName: string;
 
     constructor(apiKey: string, modelName: string) {
+        this.modelName = modelName;
+
         this.model = new ChatOpenAI({
             apiKey,
             model: modelName,
@@ -33,6 +38,7 @@ export class OpenAIAgentModel implements AgentModel {
                 baseURL: 'https://api.openai.com/v1',
             },
         });
+
     }
 
     public async selectTool(
@@ -48,18 +54,36 @@ export class OpenAIAgentModel implements AgentModel {
             },
         );
 
-        const response = await modelWithTools.invoke(
-            [
-                new SystemMessage(SYSTEM_PROMPT),
-                new HumanMessage(
-                    JSON.stringify({
-                        message,
-                        lastOrderId: lastOrderId ?? null,
-                    }),
-                ),
-            ],
-            {
-                signal: this.createSignal(signal),
+        const response = await observeGeneration(
+            'llm.select',
+            this.modelName,
+
+            async (recordUsage) => {
+                const result =
+                    await modelWithTools.invoke(
+                        [
+                            new SystemMessage(SYSTEM_PROMPT),
+
+                            new HumanMessage(
+                                JSON.stringify({
+                                    message,
+                                    lastOrderId:
+                                        lastOrderId ?? null,
+                                }),
+                            ),
+                        ],
+                        {
+                            signal:
+                                this.createSignal(signal),
+                        },
+                    );
+
+                recordUsage(
+                    result.usage_metadata?.input_tokens,
+                    result.usage_metadata?.output_tokens,
+                );
+
+                return result;
             },
         );
 
@@ -85,7 +109,6 @@ export class OpenAIAgentModel implements AgentModel {
             args: call.args,
         };
     }
-
     public async generateKnowledgeAnswer(
         message: string,
         evidence: readonly KnowledgeEvidence[],
@@ -98,6 +121,8 @@ export class OpenAIAgentModel implements AgentModel {
                     name: 'knowledge_answer',
                     method: 'jsonSchema',
                     strict: true,
+
+                    includeRaw: true,
                 },
             );
 
@@ -110,16 +135,33 @@ export class OpenAIAgentModel implements AgentModel {
             })),
         };
 
-        return structuredModel.invoke(
-            [
-                new SystemMessage(ANSWER_PROMPT),
+        return observeGeneration(
+            'llm.answer',
+            this.modelName,
 
-                new HumanMessage(
-                    JSON.stringify(payload),
-                ),
-            ],
-            {
-                signal: this.createSignal(signal),
+            async (recordUsage) => {
+                const result =
+                    await structuredModel.invoke(
+                        [
+                            new SystemMessage(
+                                ANSWER_PROMPT,
+                            ),
+
+                            new HumanMessage(
+                                JSON.stringify(payload),
+                            ),
+                        ],
+                        {
+                            signal:
+                                this.createSignal(signal),
+                        },
+                    );
+
+                recordUsage(
+                    result.raw.usage_metadata?.input_tokens,
+                    result.raw.usage_metadata?.output_tokens,
+                );
+                return result.parsed;
             },
         );
     }

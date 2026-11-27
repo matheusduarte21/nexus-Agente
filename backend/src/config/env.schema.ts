@@ -62,6 +62,29 @@ export const envSchema = z.object({
             }
         }, 'Invalid Order API URL')
         .optional(),
+    LANGFUSE_ENABLED: z
+        .enum(['true', 'false'])
+        .default('false')
+        .transform((value) => value === 'true'),
+
+    LANGFUSE_BASE_URL: z
+        .enum([
+            'https://cloud.langfuse.com',
+            'https://us.cloud.langfuse.com',
+        ])
+        .default('https://cloud.langfuse.com'),
+
+    LANGFUSE_PUBLIC_KEY: z
+        .string()
+        .trim()
+        .min(1)
+        .optional(),
+
+    LANGFUSE_SECRET_KEY: z
+        .string()
+        .trim()
+        .min(1)
+        .optional(),
 
     ORDER_API_TOKEN: z
         .string()

@@ -15,8 +15,11 @@ import { GlobalExceptionFilter } from './platform/http/global-exception.filter';
 import { HealthController } from './platform/http/health.controller';
 import { createLoggerOptions } from './platform/logging/logger.config';
 import { OrdersModule } from './modules/orders';
-import { DatabaseModule } from './platform/database/schema/database.module';
 import { ChatModule } from './modules/chat';
+import {
+  ObservabilityModule,
+} from './platform/observability/observability.module';
+import { DatabaseModule } from './platform/database/database.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -56,6 +59,7 @@ import { ChatModule } from './modules/chat';
     KnowledgeModule,
     AgentModule,
     ChatModule,
+    ObservabilityModule,
   ],
 
   controllers: [
